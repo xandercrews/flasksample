@@ -1,3 +1,5 @@
+# (work in progress)
+
 # A sample Flask REST project
 
 ## Project Overview
@@ -7,3 +9,9 @@ running services under the process management system supervisord (http://supervi
 RPC interface for managing a single supervisor instance, but we would like a single API that we can use to inspect and
 control any of our processes managed by with supervisord.  So we'll expose its functions through a REST-like web API
 build with python-Flask.
+
+# TODO
+
+ * fill out supervisor rpc
+ * mocking supervisor rpc interface, test coverage
+ * docker image to run supervisor, target from app
