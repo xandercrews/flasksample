@@ -7,7 +7,7 @@ import yaml
 import config
 
 
-class ModifiedConfig(config.Config):
+class EnhancedConfig(config.Config):
     def getByPath(self, path, default=None):
         try:
             return config.Config.getByPath(self, path)
@@ -23,7 +23,7 @@ def parse_config_options(argv):
 
 
 def get_config(opts):
-    c = ModifiedConfig()
+    c = EnhancedConfig()
     c.load(opts.config)
     return c
 

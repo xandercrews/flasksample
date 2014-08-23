@@ -1,0 +1,25 @@
+#!/usr/bin/env python2
+
+import sys
+import logging
+
+from loggingwsgi import LoggingWSGIServer
+
+from flasksample.conf import parse_config_options, get_config, load_log_config
+
+if __name__ == '__main__':
+    # initialize logging before doing much else, get logging configuration option and process first
+    opts = parse_config_options(sys.argv[1:])
+    load_log_config(opts)
+    cfg = get_config(opts)
+
+    # import and initialize app- should be loaded later than logging configuration
+    from flasksample.app import app, initialize_config, initialize_services
+    initialize_config(cfg)
+    initialize_services()
+
+    # serve app
+    listenaddr = cfg.getByPath('wsgi.listenaddr', '127.0.0.1')
+    listenport = cfg.getByPath('wsgi.listenport', 8000)
+    server = LoggingWSGIServer(listener=(listenaddr, listenport,), application=app)
+    server.serve_forever()

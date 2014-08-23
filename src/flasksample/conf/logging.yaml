@@ -9,6 +9,9 @@ handlers:
         formatter: isotime
         level: DEBUG
         stream: ext://sys.stdout
+loggers:
+    loggingwsgi:
+        level: DEBUG
 root:
     level: DEBUG
     handlers:
