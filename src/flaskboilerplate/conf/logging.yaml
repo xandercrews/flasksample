@@ -1,0 +1,15 @@
+version: 1
+formatters:
+    isotime:
+        (): iso8601logging.ISO8601Formatter
+        format: "[%(isocreated)s][%(levelname)-8s][%(name)s][%(funcName)s] %(message)s"
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: isotime
+        level: DEBUG
+        stream: ext://sys.stdout
+root:
+    level: DEBUG
+    handlers:
+        - console

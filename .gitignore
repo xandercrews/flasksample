@@ -1,0 +1,22 @@
+# idea/intellij IDE project and module files
+.idea/
+*.iml
+
+# vim swap files
+*.swo
+*.swp
+*.pyc
+
+# python coverage generated file
+.coverage
+
+# python packaging artifacts
+*.egg-info/
+*/python/dist/
+*/python/build/
+
+# rpm packaging artifacts
+*/rpmbuild
+
+# may contain localshop/private repo credentials
+src/setup.cfg
