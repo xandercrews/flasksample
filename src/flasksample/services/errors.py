@@ -6,3 +6,15 @@ class ObjectNotFound(Exception):
 
     def __str__(self):
         return 'object \'%s\' not found, %s' % (self.name, self.msg)
+
+
+class SupervisorNotFound(Exception):
+    pass
+
+
+class SupervisorTransportError(Exception):
+    pass
+
+
+class SupervisorProcessNotFound(Exception):
+    pass

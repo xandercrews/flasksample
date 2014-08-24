@@ -7,7 +7,7 @@ from flask import Flask, Request, Response, jsonify, request
 from .conf import EnhancedConfig
 from .errors import ConfigurationParameterError, InitializationError, FlaskRESTError
 
-from .services.errors import ObjectNotFound
+from .services.errors import ObjectNotFound, SupervisorTransportError, SupervisorNotFound, SupervisorProcessNotFound
 
 from .services.persistence import InMemorySupervisorPersistence
 from .services.supervisortransport import SupervisorXMLRPCTransport
@@ -62,9 +62,24 @@ def handle_json_load_failed(e):
     raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'could not load request json- %s' % str(e))
 
 
+# error handlers
+@app.errorhandler(SupervisorNotFound)
+def handle_supervisornotfound(e):
+    return FlaskRESTError(FlaskRESTError.NOT_FOUND_ERROR, 'supervisor not found').to_response()
+
+
+@app.errorhandler(SupervisorProcessNotFound)
+def handle_supervisorprocessnotfound(e):
+    return FlaskRESTError(FlaskRESTError.NOT_FOUND_ERROR, 'process not found').to_response()
+
+
+@app.errorhandler(SupervisorTransportError)
+def handle_supervisortransporterror(e):
+    return FlaskRESTError(FlaskRESTError.ERROR_SUPERVISOR_TRANSPORT, str(e)).to_response()
+
+
 @app.errorhandler(FlaskRESTError)
 def handle_flaskerror(e):
-    assert isinstance(e, FlaskRESTError)
     return e.to_response()
 
 
@@ -75,6 +90,7 @@ def handle_unknown_error(e):
     return flaskerror.to_response()
 
 
+# application routes
 @app.route('/supervisor/', methods=['GET', ])
 def list_supervisors():
     '''
@@ -122,7 +138,7 @@ def add_supervisor():
     return jsonify(**id_response)
 
 
-@app.route('/supervisor/<supervisorid>', methods=['GET', ])
+@app.route('/supervisor/<supervisorid>/', methods=['GET', ])
 def get_supervisor(supervisorid):
     '''
     gets a single supervisor record
@@ -146,7 +162,7 @@ def get_supervisor(supervisorid):
     return jsonify(**s)
 
 
-@app.route('/supervisor/<supervisorid>', methods=['DELETE', ])
+@app.route('/supervisor/<supervisorid>/', methods=['DELETE', ])
 def delete_supervisor(supervisorid):
     '''
     deletes a supervisor record by id
@@ -168,6 +184,140 @@ def delete_supervisor(supervisorid):
 
     return Response(status=200)
 
+
+@app.route('/supervisor/<supervisorid>/status', methods=['GET',])
+def supervisor_status(supervisorid):
+    '''
+    returns the result of the supervisor 'status' call insta
+
+    :param supervisorid: the id of the supervisor process, as returned by the listings above
+    :return: a json document about the status of processes
+    '''
+    try:
+        supervisorid = int(supervisorid)
+    except ValueError:
+        raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'supervisor id invalid- integer expected')
+
+    supervisortransport = app.services['supervisortransport']
+
+    status = supervisortransport.get_all_process_info(supervisorid)
+    return jsonify(**status)
+
+
+@app.route('/supervisor/<supervisorid>/startall', methods=['POST',])
+def supervisor_startall(supervisorid):
+    '''
+    start all processes by supervisor
+
+    :param supervisorid: the id of the supervisor process, as returned by the listings above
+    :return: empty response
+    '''
+    try:
+        supervisorid = int(supervisorid)
+    except ValueError:
+        raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'supervisor id invalid- integer expected')
+
+    supervisortransport = app.services['supervisortransport']
+    supervisortransport.start_all_processes(supervisorid)
+    return Response(status=200)
+
+
+@app.route('/supervisor/<supervisorid>/stopall', methods=['POST',])
+def supervisor_stopall(supervisorid):
+    '''
+    stop all processes by supervisor
+
+    :param supervisorid: the id of the supervisor process, as returned by the listings above
+    :return: empty response
+    '''
+    try:
+        supervisorid = int(supervisorid)
+    except ValueError:
+        raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'supervisor id invalid- integer expected')
+
+    supervisortransport = app.services['supervisortransport']
+    supervisortransport.stop_all_processes(supervisorid)
+    return Response(status=200)
+
+
+@app.route('/supervisor/<supervisorid>/<processname>/start', methods=['POST',])
+def supervisor_start_process(supervisorid, processname):
+    '''
+    start a process by supervisor id and process name
+
+    :param supervisorid: the id of the supervisor process, as returned by the listings above
+    :param processname: the process name as obtained by the status command
+    :return: empty response
+    '''
+    try:
+        supervisorid = int(supervisorid)
+    except ValueError:
+        raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'supervisor id invalid- integer expected')
+
+    supervisortransport = app.services['supervisortransport']
+    supervisortransport.start_process(supervisorid, processname)
+    return Response(status=200)
+
+
+@app.route('/supervisor/<supervisorid>/<processname>/stop', methods=['POST',])
+def supervisor_stop_process(supervisorid, processname):
+    '''
+    stop a process by supervisor id and process name
+
+    :param supervisorid: the id of the supervisor process, as returned by the listings above
+    :param processname: the process name as obtained by the status command
+    :return: empty response
+    '''
+    try:
+        supervisorid = int(supervisorid)
+    except ValueError:
+        raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'supervisor id invalid- integer expected')
+
+    supervisortransport = app.services['supervisortransport']
+    supervisortransport.stop_process(supervisorid, processname)
+    return Response(status=200)
+
+
+@app.route('/supervisor/<supervisorid>/<processname>/stdout', methods=['GET',])
+def supervisor_process_stdout(supervisorid, processname):
+    '''
+    get the stdout of a process
+
+    :param supervisorid: the id of the supervisor process, as returned by the listings above
+    :param processname: the process name as obtained by the status command
+    :return:
+    '''
+    try:
+        supervisorid = int(supervisorid)
+    except ValueError:
+        raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'supervisor id invalid- integer expected')
+
+    supervisortransport = app.services['supervisortransport']
+
+    response = { 'stdout': supervisortransport.get_process_stdout(supervisorid, processname) }
+
+    return jsonify(**response)
+
+
+@app.route('/supervisor/<supervisorid>/<processname>/stderr', methods=['GET',])
+def supervisor_process_stderr(supervisorid, processname):
+    '''
+    get the stderr output of a process
+
+    :param supervisorid: the id of the supervisor process, as returned by the listings above
+    :param processname: the process name as obtained by the status command
+    :return:
+    '''
+    try:
+        supervisorid = int(supervisorid)
+    except ValueError:
+        raise FlaskRESTError(FlaskRESTError.ERROR_MALFORMED_REQUEST, 'supervisor id invalid- integer expected')
+
+    supervisortransport = app.services['supervisortransport']
+
+    response = { 'stderr': supervisortransport.get_process_stderr(supervisorid, processname) }
+
+    return jsonify(**response)
 
 @app.route('/noop')
 def noop():

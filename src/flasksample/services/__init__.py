@@ -34,11 +34,7 @@ class SupervisorTransportService(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def get_status(self, supervisorid):
-        pass
-
-    @abc.abstractmethod
-    def get_processes(self, supervisorid):
+    def get_all_process_info(self, supervisorid):
         pass
 
     @abc.abstractmethod

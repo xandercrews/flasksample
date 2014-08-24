@@ -12,6 +12,4 @@ build with python-Flask.
 
 # TODO
 
- * fill out supervisor rpc
  * mocking supervisor rpc interface, test coverage
- * docker image to run supervisor, target from app

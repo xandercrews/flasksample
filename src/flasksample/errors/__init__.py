@@ -27,6 +27,7 @@ class FlaskRESTError(Exception):
     ERROR_MALFORMED_REQUEST = FlaskErrorCode('ERROR_MALFORMED_REQUEST', 'malformed request', 400)
     NOT_FOUND_ERROR = FlaskErrorCode('NOT_FOUND_ERROR', 'object not found', 404)
     UNKNOWN_ERROR = FlaskErrorCode('UNKNOWN_ERROR', 'unknown error occurred', 503)
+    ERROR_SUPERVISOR_TRANSPORT = FlaskErrorCode('ERROR_SUPERVISOR_TRANSPORT', 'supervisor transport failed', 503)
 
     def __init__(self, error_code, msg, http_status=None):
         assert isinstance(error_code, FlaskErrorCode)
